@@ -18,6 +18,7 @@ Boilerplate fullstack pessoal baseado em Next.js com App Router, Prisma, Vitest,
 - [Autenticação](#autenticação)
 - [Testes](#testes)
 - [CI/CD](#cicd)
+- [Hooks de commit (Husky + lint-staged)](#hooks-de-commit-husky--lint-staged)
 - [Scripts disponíveis](#scripts-disponíveis)
 - [O que você precisa criar ao usar em um projeto real](#o-que-você-precisa-criar-ao-usar-em-um-projeto-real)
 - [Como manter o boilerplate atualizado](#como-manter-o-boilerplate-atualizado)
@@ -27,19 +28,19 @@ Boilerplate fullstack pessoal baseado em Next.js com App Router, Prisma, Vitest,
 
 ## Stack
 
-| Categoria | Tecnologia | Versão | Por quê |
-|---|---|---|---|
-| Framework | Next.js (App Router) | 16.x | SSR, SSG, API Routes, file-based routing tudo em um |
-| Linguagem | TypeScript | 5.x | Tipagem estática, autocomplete, segurança em refactors |
-| Estilização | Tailwind CSS | 4.x | Utility-first, sem CSS files extras, consistência visual |
-| ORM | Prisma | 7.x | Tipagem automática do banco, migrations, Prisma Studio |
-| Banco de dados | PostgreSQL | 16 | Relacional, robusto, padrão do mercado |
-| Containerização | Docker + Docker Compose | - | Banco local sem instalar Postgres na máquina |
-| Testes | Vitest + Testing Library | 4.x | Mais rápido que Jest, integração nativa com Vite/ESM |
-| Formatação | Prettier | 3.x | Formato de código consistente e automático |
-| Linting | ESLint | 9.x | Detecta erros e más práticas em tempo de desenvolvimento |
-| CI | GitHub Actions | - | Roda lint, format check e testes automaticamente em todo push |
-| Runtime de scripts | tsx | 4.x | Executa arquivos TypeScript diretamente (seeds, scripts) |
+| Categoria          | Tecnologia               | Versão | Por quê                                                       |
+| ------------------ | ------------------------ | ------ | ------------------------------------------------------------- |
+| Framework          | Next.js (App Router)     | 16.x   | SSR, SSG, API Routes, file-based routing tudo em um           |
+| Linguagem          | TypeScript               | 5.x    | Tipagem estática, autocomplete, segurança em refactors        |
+| Estilização        | Tailwind CSS             | 4.x    | Utility-first, sem CSS files extras, consistência visual      |
+| ORM                | Prisma                   | 7.x    | Tipagem automática do banco, migrations, Prisma Studio        |
+| Banco de dados     | PostgreSQL               | 16     | Relacional, robusto, padrão do mercado                        |
+| Containerização    | Docker + Docker Compose  | -      | Banco local sem instalar Postgres na máquina                  |
+| Testes             | Vitest + Testing Library | 4.x    | Mais rápido que Jest, integração nativa com Vite/ESM          |
+| Formatação         | Prettier                 | 3.x    | Formato de código consistente e automático                    |
+| Linting            | ESLint                   | 9.x    | Detecta erros e más práticas em tempo de desenvolvimento      |
+| CI                 | GitHub Actions           | -      | Roda lint, format check e testes automaticamente em todo push |
+| Runtime de scripts | tsx                      | 4.x    | Executa arquivos TypeScript diretamente (seeds, scripts)      |
 
 ---
 
@@ -182,6 +183,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 > Variáveis prefixadas com `NEXT_PUBLIC_` são expostas no navegador. Nunca coloque secrets nelas.
 
 Ao adicionar uma nova variável de ambiente no projeto:
+
 1. Adicione no `.env` com o valor real
 2. Adicione no `.env.example` com um valor de exemplo ou vazio
 3. Documente para que ela serve aqui neste README
@@ -197,6 +199,7 @@ docker compose up -d
 ```
 
 Isso sobe um container PostgreSQL na porta `5432` com:
+
 - **Usuário**: `postgres`
 - **Senha**: `postgres`
 - **Database**: `myapp`
@@ -247,11 +250,11 @@ pnpm db:seed                  # Roda o seed (se necessário)
 
 Este boilerplate **não inclui autenticação configurada por padrão**. A escolha de auth varia muito por projeto. Recomendações:
 
-| Opção | Quando usar |
-|---|---|
+| Opção           | Quando usar                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------ |
 | **Better Auth** | Projetos que precisam de auth completa com sessões, OAuth e Prisma. Substituto moderno do Lucia. |
-| **JWT manual** | APIs puras, projetos simples ou quando você quer controle total. |
-| **Clerk** | Quando DX é prioridade e o projeto pode ter custo de serviço externo. |
+| **JWT manual**  | APIs puras, projetos simples ou quando você quer controle total.                                 |
+| **Clerk**       | Quando DX é prioridade e o projeto pode ter custo de serviço externo.                            |
 
 ### Adicionando Better Auth
 
@@ -303,37 +306,48 @@ O pipeline de CI roda automaticamente em todo push e pull request para `main` e 
 2. **Format check** — `pnpm format:check` — garante que o código está formatado com Prettier
 3. **Testes** — `pnpm test --run` — garante que todos os testes passam
 
-### Antes de fazer push
+---
 
-Para evitar falhas no CI, rode localmente:
+## Hooks de commit (Husky + lint-staged)
 
-```bash
-pnpm lint
-pnpm format
-pnpm test --run
-```
+O projeto usa **Husky** para rodar verificações automaticamente antes de cada commit, eliminando a necessidade de rodar `pnpm format` e `pnpm lint` manualmente.
+
+### O que roda no pre-commit
+
+| Arquivos                             | O que executa           |
+| ------------------------------------ | ----------------------- |
+| `*.ts, *.tsx, *.js, *.jsx`           | ESLint --fix + Prettier |
+| `*.json, *.md, *.yml, *.yaml, *.css` | Prettier                |
+
+O lint-staged garante que **apenas os arquivos staged** sejam verificados — não o projeto inteiro. Isso torna o processo rápido mesmo em projetos grandes.
+
+### Como funciona
+
+Ao rodar `git commit`, o Husky intercepta e executa `pnpm lint-staged`. Se algum arquivo tiver erro de lint que não possa ser corrigido automaticamente, o commit é bloqueado até você corrigir.
+
+> O Husky é inicializado automaticamente via script `prepare` no `package.json` ao rodar `pnpm install`.
 
 ---
 
 ## Scripts disponíveis
 
-| Script | Comando | O que faz |
-|---|---|---|
-| Desenvolvimento | `pnpm dev` | Inicia o servidor Next.js em modo desenvolvimento |
-| Build | `pnpm build` | Gera o build de produção |
-| Produção | `pnpm start` | Inicia o servidor em modo produção (requer build) |
-| Lint | `pnpm lint` | Roda o ESLint em todo o projeto |
-| Formatar | `pnpm format` | Formata todos os arquivos com Prettier |
-| Checar formato | `pnpm format:check` | Verifica se os arquivos estão formatados (usado no CI) |
-| Migration | `pnpm db:migrate` | Cria e aplica uma nova migration |
-| Generate | `pnpm db:generate` | Regenera o Prisma Client |
-| Studio | `pnpm db:studio` | Abre o Prisma Studio na porta 5555 |
-| Seed | `pnpm db:seed` | Executa o arquivo `prisma/seed.ts` |
-| Reset banco | `pnpm db:reset` | Apaga o banco e reaplica tudo do zero |
-| Testes | `pnpm test` | Roda Vitest em modo watch |
-| Testes (CI) | `pnpm test --run` | Roda Vitest uma vez e encerra |
-| Testes UI | `pnpm test:ui` | Abre a interface visual do Vitest |
-| Setup | `pnpm setup` | Instala dependências e cria o `.env` a partir do `.env.example` |
+| Script          | Comando             | O que faz                                                       |
+| --------------- | ------------------- | --------------------------------------------------------------- |
+| Desenvolvimento | `pnpm dev`          | Inicia o servidor Next.js em modo desenvolvimento               |
+| Build           | `pnpm build`        | Gera o build de produção                                        |
+| Produção        | `pnpm start`        | Inicia o servidor em modo produção (requer build)               |
+| Lint            | `pnpm lint`         | Roda o ESLint em todo o projeto                                 |
+| Formatar        | `pnpm format`       | Formata todos os arquivos com Prettier                          |
+| Checar formato  | `pnpm format:check` | Verifica se os arquivos estão formatados (usado no CI)          |
+| Migration       | `pnpm db:migrate`   | Cria e aplica uma nova migration                                |
+| Generate        | `pnpm db:generate`  | Regenera o Prisma Client                                        |
+| Studio          | `pnpm db:studio`    | Abre o Prisma Studio na porta 5555                              |
+| Seed            | `pnpm db:seed`      | Executa o arquivo `prisma/seed.ts`                              |
+| Reset banco     | `pnpm db:reset`     | Apaga o banco e reaplica tudo do zero                           |
+| Testes          | `pnpm test`         | Roda Vitest em modo watch                                       |
+| Testes (CI)     | `pnpm test --run`   | Roda Vitest uma vez e encerra                                   |
+| Testes UI       | `pnpm test:ui`      | Abre a interface visual do Vitest                               |
+| Setup           | `pnpm setup`        | Instala dependências e cria o `.env` a partir do `.env.example` |
 
 ---
 
@@ -417,13 +431,13 @@ git push origin main
 
 Use prefixos para facilitar o histórico:
 
-| Prefixo | Quando usar |
-|---|---|
-| `chore:` | Atualização de dependências, configs, scripts |
-| `feat:` | Adição de nova lib ou funcionalidade base |
-| `fix:` | Correção de configuração quebrada |
-| `docs:` | Atualização do README |
-| `style:` | Formatação, sem mudança de lógica |
+| Prefixo     | Quando usar                                      |
+| ----------- | ------------------------------------------------ |
+| `chore:`    | Atualização de dependências, configs, scripts    |
+| `feat:`     | Adição de nova lib ou funcionalidade base        |
+| `fix:`      | Correção de configuração quebrada                |
+| `docs:`     | Atualização do README                            |
+| `style:`    | Formatação, sem mudança de lógica                |
 | `refactor:` | Reorganização de estrutura de pastas ou arquivos |
 
 ### Atualizando dependências
@@ -453,6 +467,7 @@ rodapé opcional
 ```
 
 Exemplos:
+
 ```
 feat(auth): add Better Auth with Prisma adapter
 fix(prisma): move DATABASE_URL to prisma.config.ts
